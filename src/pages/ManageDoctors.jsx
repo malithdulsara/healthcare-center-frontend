@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 export default function ManageDoctors() {
+  // 1. Form Input Fields සඳහා States
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -9,20 +10,30 @@ export default function ManageDoctors() {
   const [specializationId, setSpecializationId] = useState('');
   const [maxPatientsPerDay, setMaxPatientsPerDay] = useState(30);
 
+  // 2. Data Lists සඳහා States
   const [doctors, setDoctors] = useState([]);
   const [specializations, setSpecializations] = useState([]);
   
+  // 3. Alerts, Eye Icon සහ Update Mode සඳහා States
   const [message, setMessage] = useState({ text: '', type: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedDoctorId, setSelectedDoctorId] = useState(null);
 
+  // 4. Searching සහ Pagination සඳහා States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5; // පිටුවක පෙන්වන උපරිම වෛද්‍යවරුන් ගණන
+
   const API_URL = 'http://localhost:8080/api/admin';
 
+  // පිටුව ප්‍රථම වරට Load වෙද්දීම දත්ත ලබා ගැනීම
   useEffect(() => {
     fetchDoctors();
     fetchSpecializations();
   }, []);
+
+  const RepublicOfDoctors = async () => { /* තාවකාලික සටහනක් */ };
 
   const fetchDoctors = async () => {
     try {
@@ -42,21 +53,24 @@ export default function ManageDoctors() {
     }
   };
 
+  // Form Validation සහ Submit (Save/Update) Logic
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-
+    // 1. හිස්තැන් පිරීම් පරීක්ෂාව
     if (!name || !email || (!password && !isEditMode) || !phoneNumber || !specializationId) {
       setMessage({ text: 'Please fill all required fields! ⚠️', type: 'error' });
       return;
     }
 
+    // 2. Email Validation (Regex)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setMessage({ text: 'Please enter a valid email address! 📧', type: 'error' });
       return;
     }
 
+    // 3. Phone Number Validation (ලංකාවේ ඉලක්කම් 10 පරීක්ෂාව)
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(phoneNumber)) {
       setMessage({ text: 'Phone number must be exactly 10 digits! 📱', type: 'error' });
@@ -91,6 +105,7 @@ export default function ManageDoctors() {
     }
   };
 
+  // Edit බටන් එක ක්ලික් කළ විට දත්ත Form එකට ගැනීම
   const handleEditClick = (doc) => {
     setIsEditMode(true);
     setSelectedDoctorId(doc.id);
@@ -101,9 +116,10 @@ export default function ManageDoctors() {
     setMaxPatientsPerDay(doc.maxPatientsPerDay || 30);
     setPassword(''); 
     setShowPassword(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // පිටුව සිනිදුවට ඉහළට Scroll කිරීම
   };
 
+  // Doctor කෙනෙක් අයින් කිරීම
   const handleRemoveDoctor = async (id) => {
     if (window.confirm("Are you sure you want to remove this doctor?")) {
       try {
@@ -117,6 +133,7 @@ export default function ManageDoctors() {
     }
   };
 
+  // Form එක මුල් තත්ත්වයට පත් කිරීම (Reset)
   const resetForm = () => {
     setIsEditMode(false);
     setSelectedDoctorId(null);
@@ -127,15 +144,36 @@ export default function ManageDoctors() {
     setSpecializationId('');
     setMaxPatientsPerDay(30);
     setShowPassword(false);
+    setCurrentPage(1); // වගුව පළමු පිටුවට රීසෙට් කිරීම
   };
+
+  // --- SEARCHING & PAGINATION LOGIC ---
+  
+  // 1. Search Query එක අනුව දත්ත පෙරා ගැනීම (Filtering)
+  const filteredDoctors = doctors.filter((doc) => {
+    const docName = doc.user?.name?.toLowerCase() || '';
+    const docEmail = doc.user?.email?.toLowerCase() || '';
+    const docSpec = doc.specialization?.name?.toLowerCase() || '';
+    const query = searchQuery.toLowerCase();
+
+    return docName.includes(query) || docEmail.includes(query) || docSpec.includes(query);
+  });
+
+  // 2. පෙරාගත් දත්ත පිටු වලට බෙදා වෙන් කිරීම (Pagination)
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredDoctors.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredDoctors.length / itemsPerPage);
 
   return (
     <div className="p-8 space-y-8">
+      {/* Title */}
       <div>
         <h2 className="text-2xl font-bold text-slate-800">Doctors Management</h2>
-        <p className="text-sm text-gray-500 mt-1">Register, validate, update and manage doctor profiles.</p>
+        <p className="text-sm text-gray-500 mt-1">Register, validate, search, paginate and update doctor profiles.</p>
       </div>
 
+      {/* Alerts */}
       {message.text && (
         <div className={`p-4 rounded-xl text-sm font-medium border transition-all max-w-7xl ${
           message.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'
@@ -144,8 +182,10 @@ export default function ManageDoctors() {
         </div>
       )}
 
+      {/* Main Layout Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
+        {/* 1. Doctor Registration & Edit Form */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-slate-700">
@@ -258,10 +298,34 @@ export default function ManageDoctors() {
           </form>
         </div>
 
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-fit">
+        {/* 2. Registered Doctors List Table with Live Search & Pagination */}
+        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-fit flex flex-col">
           <div className="p-6 border-b border-gray-50">
             <h3 className="text-lg font-semibold text-slate-700">Registered Doctors</h3>
           </div>
+
+          {/* Search Filter Bar */}
+          <div className="p-4 bg-slate-50/50 border-b border-gray-100">
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.603 10.601Z" />
+                </svg>
+              </span>
+              <input
+                type="text"
+                placeholder="Search by name, email, or specialization..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1); // සර්ච් කරද්දී පිටුව 1 ට රීසෙට් කිරීම
+                }}
+                className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition text-xs bg-white"
+              />
+            </div>
+          </div>
+
+          {/* Table Content */}
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -272,14 +336,14 @@ export default function ManageDoctors() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-sm text-gray-600">
-                {doctors.length === 0 ? (
+                {currentItems.length === 0 ? (
                   <tr>
                     <td colSpan="3" className="px-6 py-12 text-center text-gray-400 italic">
-                      No doctors registered yet.
+                      No matching doctors found.
                     </td>
                   </tr>
                 ) : (
-                  doctors.map((doc) => (
+                  currentItems.map((doc) => (
                     <tr key={doc.id} className="hover:bg-slate-50/50 transition">
                       <td className="px-6 py-4">
                         <div className="font-semibold text-slate-800">{doc.user?.name}</div>
@@ -313,8 +377,51 @@ export default function ManageDoctors() {
               </tbody>
             </table>
           </div>
-        </div>
 
+          {/* Pagination Controls Footer */}
+          {filteredDoctors.length > itemsPerPage && (
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-slate-50/50 mt-auto">
+              <span className="text-xs text-gray-500 font-medium">
+                Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredDoctors.length)} of {filteredDoctors.length} Doctors
+              </span>
+              <div className="flex items-center space-x-1.5">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                >
+                  Previous
+                </button>
+                
+                {[...Array(totalPages)].map((_, index) => (
+                  <button
+                    key={index + 1}
+                    type="button"
+                    onClick={() => setCurrentPage(index + 1)}
+                    className={`px-2.5 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
+                      currentPage === index + 1
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+
+        </div>
       </div>
     </div>
   );
