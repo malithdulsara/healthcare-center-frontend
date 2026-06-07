@@ -1,10 +1,321 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 export default function ManageDoctors() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [specializationId, setSpecializationId] = useState('');
+  const [maxPatientsPerDay, setMaxPatientsPerDay] = useState(30);
+
+  const [doctors, setDoctors] = useState([]);
+  const [specializations, setSpecializations] = useState([]);
+  
+  const [message, setMessage] = useState({ text: '', type: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedDoctorId, setSelectedDoctorId] = useState(null);
+
+  const API_URL = 'http://localhost:8080/api/admin';
+
+  useEffect(() => {
+    fetchDoctors();
+    fetchSpecializations();
+  }, []);
+
+  const fetchDoctors = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/doctors`);
+      setDoctors(response.data);
+    } catch (error) {
+      console.error("Failed to fetch doctors:", error);
+    }
+  };
+
+  const fetchSpecializations = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/specializations`);
+      setSpecializations(response.data);
+    } catch (error) {
+      console.error("Failed to fetch specializations:", error);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+
+    if (!name || !email || (!password && !isEditMode) || !phoneNumber || !specializationId) {
+      setMessage({ text: 'Please fill all required fields! ⚠️', type: 'error' });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setMessage({ text: 'Please enter a valid email address! 📧', type: 'error' });
+      return;
+    }
+
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      setMessage({ text: 'Phone number must be exactly 10 digits! 📱', type: 'error' });
+      return;
+    }
+
+    const doctorData = {
+      name,
+      email,
+      password: password || null,
+      phoneNumber,
+      specializationId: parseInt(specializationId),
+      maxPatientsPerDay: parseInt(maxPatientsPerDay)
+    };
+
+    try {
+      if (isEditMode) {
+        await axios.put(`${API_URL}/doctor/${selectedDoctorId}`, doctorData);
+        setMessage({ text: 'Doctor profile updated successfully! 🔄', type: 'success' });
+      } else {
+        await axios.post(`${API_URL}/doctor`, doctorData);
+        setMessage({ text: 'Doctor registered successfully! ✅', type: 'success' });
+      }
+      
+      resetForm();
+      fetchDoctors();
+    } catch (error) {
+      setMessage({ 
+        text: error.response?.data?.message || 'Something went wrong. Please try again!', 
+        type: 'error' 
+      });
+    }
+  };
+
+  const handleEditClick = (doc) => {
+    setIsEditMode(true);
+    setSelectedDoctorId(doc.id);
+    setName(doc.user?.name || '');
+    setEmail(doc.user?.email || '');
+    setPhoneNumber(doc.user?.phoneNumber || '');
+    setSpecializationId(doc.specialization?.id || '');
+    setMaxPatientsPerDay(doc.maxPatientsPerDay || 30);
+    setPassword(''); 
+    setShowPassword(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+  };
+
+  const handleRemoveDoctor = async (id) => {
+    if (window.confirm("Are you sure you want to remove this doctor?")) {
+      try {
+        await axios.delete(`${API_URL}/doctor/${id}`);
+        setMessage({ text: 'Doctor removed successfully! 🗑️', type: 'success' });
+        if (selectedDoctorId === id) resetForm();
+        fetchDoctors();
+      } catch (error) {
+        setMessage({ text: 'Failed to remove doctor.', type: 'error' });
+      }
+    }
+  };
+
+  const resetForm = () => {
+    setIsEditMode(false);
+    setSelectedDoctorId(null);
+    setName('');
+    setEmail('');
+    setPassword('');
+    setPhoneNumber('');
+    setSpecializationId('');
+    setMaxPatientsPerDay(30);
+    setShowPassword(false);
+  };
+
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">Doctor Management</h2>
-      <p className="text-gray-500">Here, you can add and remove doctors.</p>
+    <div className="p-8 space-y-8">
+      <div>
+        <h2 className="text-2xl font-bold text-slate-800">Doctors Management</h2>
+        <p className="text-sm text-gray-500 mt-1">Register, validate, update and manage doctor profiles.</p>
+      </div>
+
+      {message.text && (
+        <div className={`p-4 rounded-xl text-sm font-medium border transition-all max-w-7xl ${
+          message.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'
+        }`}>
+          {message.text}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-slate-700">
+              {isEditMode ? 'Edit Doctor Profile' : 'Register New Doctor'}
+            </h3>
+            {isEditMode && (
+              <button onClick={resetForm} className="text-xs text-red-500 hover:underline cursor-pointer">
+                Cancel Edit
+              </button>
+            )}
+          </div>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+              <input
+                type="text"
+                placeholder="Dr. John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
+              <input
+                type="text"
+                placeholder="johndoe@gmail.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Password {isEditMode ? '(Leave blank to keep current)' : '*'}
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-2 pr-12 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition cursor-pointer"
+                >
+                  {showPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number * (10 Digits)</label>
+              <input
+                type="text"
+                placeholder="0771234567"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Specialization *</label>
+              <select
+                value={specializationId}
+                onChange={(e) => setSpecializationId(e.target.value)}
+                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition text-sm bg-white"
+              >
+                <option value="">Select Specialization</option>
+                {specializations.map((spec) => (
+                  <option key={spec.id} value={spec.id}>{spec.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Max Patients Per Day</label>
+              <input
+                type="number"
+                value={maxPatientsPerDay}
+                onChange={(e) => setMaxPatientsPerDay(e.target.value)}
+                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition text-sm"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className={`w-full py-2.5 text-white font-semibold rounded-xl shadow-md transition text-sm cursor-pointer ${
+                isEditMode ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/10' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/10'
+              }`}
+            >
+              {isEditMode ? 'Update Doctor Profile' : 'Register Doctor'}
+            </button>
+          </form>
+        </div>
+
+        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-fit">
+          <div className="p-6 border-b border-gray-50">
+            <h3 className="text-lg font-semibold text-slate-700">Registered Doctors</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 text-slate-500 text-xs uppercase font-semibold">
+                  <th className="px-6 py-3 border-b border-gray-100">Name</th>
+                  <th className="px-6 py-3 border-b border-gray-100">Specialization</th>
+                  <th className="px-6 py-3 border-b border-gray-100 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-sm text-gray-600">
+                {doctors.length === 0 ? (
+                  <tr>
+                    <td colSpan="3" className="px-6 py-12 text-center text-gray-400 italic">
+                      No doctors registered yet.
+                    </td>
+                  </tr>
+                ) : (
+                  doctors.map((doc) => (
+                    <tr key={doc.id} className="hover:bg-slate-50/50 transition">
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-slate-800">{doc.user?.name}</div>
+                        <div className="text-xs text-gray-400">{doc.user?.email}</div>
+                        <div className="text-xs text-gray-400">📱 {doc.user?.phoneNumber}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-semibold">
+                          {doc.specialization?.name}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex justify-center space-x-2">
+                          <button
+                            onClick={() => handleEditClick(doc)}
+                            className="px-2.5 py-1 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 font-medium text-xs transition cursor-pointer"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleRemoveDoctor(doc.id)}
+                            className="px-2.5 py-1 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-medium text-xs transition cursor-pointer"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }
