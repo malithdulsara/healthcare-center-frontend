@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar';
 import ManageSpecializations from './pages/ManageSpecifications';
 import ManageDoctors from './pages/ManageDoctors';
 import ManageStaff from './pages/ManageStaff';
+import ManageSchedules from './pages/ManageSchedules';
 
 function App() {
   const [currentTab, setCurrentTab] = useState('specializations');
@@ -15,6 +16,8 @@ function App() {
         return <ManageDoctors />;
       case 'staff':
         return <ManageStaff />;
+      case 'schedules':
+        return <ManageSchedules />;
       default:
         return <ManageSpecializations />;
     }

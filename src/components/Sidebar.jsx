@@ -5,6 +5,7 @@ export default function Sidebar({ currentTab, setCurrentTab }) {
     { id: 'specializations', name: 'Specializations', icon: '🏷️' },
     { id: 'doctors', name: 'Manage Doctors', icon: '🧑‍⚕️' },
     { id: 'staff', name: 'Manage Staff', icon: '👥' },
+    { id: 'schedules', name: 'Manage Schedules', icon: '📅' },
   ];
 
   return (
