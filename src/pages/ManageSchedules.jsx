@@ -6,6 +6,7 @@ export default function ManageSchedules() {
   const [availableDate, setAvailableDate] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const[roomNumber, setRoomNumber] = useState('');
 
   const [schedules, setSchedules] = useState([]);
   const [doctors, setDoctors] = useState([]);
@@ -14,6 +15,7 @@ export default function ManageSchedules() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  
   const itemsPerPage = 5;
 
   const ADMIN_API_URL = 'http://localhost:8080/api/admin';
@@ -45,7 +47,7 @@ export default function ManageSchedules() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!doctorId || !availableDate || !startTime || !endTime) {
+    if (!doctorId || !availableDate || !startTime || !endTime || !roomNumber) {
       setMessage({ text: 'Please fill all fields!', type: 'error' });
       return;
     }
@@ -59,7 +61,8 @@ export default function ManageSchedules() {
       doctorId: parseInt(doctorId),
       availableDate, 
       startTime: startTime + ":00",
-      endTime: endTime + ":00"
+      endTime: endTime + ":00",
+      roomNumber: roomNumber.trim()
     };
 
     try {
@@ -93,6 +96,7 @@ export default function ManageSchedules() {
     setAvailableDate('');
     setStartTime('');
     setEndTime('');
+    setRoomNumber('');
     setCurrentPage(1);
   };
   
@@ -178,7 +182,16 @@ export default function ManageSchedules() {
                 className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition text-sm"
               />
             </div>
-
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Hospital Room / Location *</label>
+              <input
+                type="text"
+                placeholder="e.g., Room No 04, OPD-02"
+                value={roomNumber}
+                onChange={(e) => setRoomNumber(e.target.value)}
+                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition text-sm"
+              />
+            </div>
             <button
               type="submit"
               className="w-full py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 shadow-md shadow-blue-500/10 transition text-sm cursor-pointer"
