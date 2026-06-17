@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 export default function MyAppointments() {
-  // 1. Appointments දත්ත තබා ගන්නා රාමු
   const [appointments, setAppointments] = useState([]);
   const [message, setMessage] = useState({ text: '', type: '' });
 
-  // 2. Searching සහ Pagination සඳහා States
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -14,7 +12,6 @@ export default function MyAppointments() {
   const TEMPORARY_PATIENT_ID = 1;
   const APPOINTMENT_API_URL = 'http://localhost:8080/api/appointments';
 
-  // පිටුව load වෙද්දීම රෝගියාගේ Appointments ලැයිස්තුව ලබා ගැනීම
   useEffect(() => {
     fetchMyAppointments();
   }, []);
@@ -22,15 +19,13 @@ export default function MyAppointments() {
   const fetchMyAppointments = async () => {
     try {
       const response = await axios.get(`${APPOINTMENT_API_URL}/patient/${TEMPORARY_PATIENT_ID}`);
-      // පැමිණෙන දත්ත Array එකක් බව තහවුරු කරගෙන සෙට් කිරීම
       setAppointments(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error("Failed to fetch patient appointments:", error);
-      setAppointments([]); // Error එකක් ආවොත් හිස් Array එකක් තැබීමෙන් Crash වීම වැළකේ
+      setAppointments([]); 
     }
   };
 
-  // Status එකට අනුව ලස්සන වර්ණ (Badges) ලබා දීම
   const getStatusBadgeClass = (status) => {
     switch (status?.toUpperCase()) {
       case 'PENDING':
@@ -44,9 +39,6 @@ export default function MyAppointments() {
     }
   };
 
-  // --- SEARCHING & PAGINATION LOGIC ---
-
-  // ආරක්ෂිතව filter කිරීම සිදුකර ඇත
   const filteredAppointments = (appointments || []).filter((app) => {
     if (!app) return false;
     const docName = app.schedule?.doctor?.user?.name?.toLowerCase() || '';
@@ -64,19 +56,16 @@ export default function MyAppointments() {
 
   return (
     <div className="p-8 space-y-8 max-w-6xl mx-auto">
-      {/* Title */}
       <div>
         <h2 className="text-2xl font-bold text-slate-800">My Appointments Ticket List</h2>
         <p className="text-sm text-gray-500 mt-1">View, track, and monitor your scheduled medical channelling sessions.</p>
       </div>
 
-      {/* Main Card Container */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-fit">
         <div className="p-6 border-b border-gray-50">
           <h3 className="text-lg font-semibold text-slate-700">History & Status Log</h3>
         </div>
 
-        {/* Search Bar Input */}
         <div className="p-4 bg-slate-50/50 border-b border-gray-100">
           <div className="relative">
             <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
@@ -97,7 +86,6 @@ export default function MyAppointments() {
           </div>
         </div>
 
-        {/* Table Content */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -118,15 +106,13 @@ export default function MyAppointments() {
                 </tr>
               ) : (
                 currentItems.map((app) => {
-                  if (!app || !app.id) return null; // ආරක්ෂිත පියවරක් ලෙස null/undefined ඒවා මඟ හැරීම
+                  if (!app || !app.id) return null; 
                   return (
                     <tr key={app.id} className="hover:bg-slate-50/50 transition">
-                      {/* Ticket ID Format */}
                       <td className="px-6 py-4 font-bold text-slate-400">
                         #APT-{app.id.toString().padStart(4, '0')}
                       </td>
                       
-                      {/* Doctor Details */}
                       <td className="px-6 py-4">
                         <div className="font-bold text-slate-800">{app.schedule?.doctor?.user?.name || 'N/A'}</div>
                         <div className="text-xs text-blue-600 font-medium mt-0.5">
@@ -134,7 +120,6 @@ export default function MyAppointments() {
                         </div>
                       </td>
 
-                      {/* Date & Time Session */}
                       <td className="px-6 py-4">
                         <div className="font-semibold text-slate-700">📅 {app.schedule?.availableDate || 'N/A'}</div>
                         <div className="text-xs text-gray-400 mt-0.5">
@@ -142,12 +127,10 @@ export default function MyAppointments() {
                         </div>
                       </td>
 
-                      {/* Dynamic Room Number Location */}
                       <td className="px-6 py-4 font-medium text-slate-600">
                         📍 {app.schedule?.roomNumber || 'Main Clinic Room'}
                       </td>
 
-                      {/* Status Display Badge */}
                       <td className="px-6 py-4 text-center">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusBadgeClass(app.status)}`}>
                           {app.status || 'PENDING'}
@@ -161,7 +144,6 @@ export default function MyAppointments() {
           </table>
         </div>
 
-        {/* Pagination Controls Footer */}
         {filteredAppointments.length > itemsPerPage && (
           <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-slate-50/50 mt-auto">
             <span className="text-xs text-gray-500 font-medium">
