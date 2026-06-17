@@ -5,6 +5,7 @@ import ManageDoctors from './pages/ManageDoctors';
 import ManageStaff from './pages/ManageStaff';
 import ManageSchedules from './pages/ManageSchedules';
 import BookAppointment from './pages/BookAppointment';
+import MyAppointments from './pages/MyAppointments';
 
 function App() {
   const [currentTab, setCurrentTab] = useState('specializations');
@@ -21,6 +22,8 @@ function App() {
         return <ManageSchedules />;
       case 'book-appointment':
         return <BookAppointment />;
+      case 'my-appointments':
+        return <MyAppointments />;
       default:
         return <ManageSpecializations />;
     }
