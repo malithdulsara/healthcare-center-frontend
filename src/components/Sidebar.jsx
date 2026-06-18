@@ -7,7 +7,8 @@ export default function Sidebar({ currentTab, setCurrentTab }) {
     { id: 'staff', name: 'Manage Staff', icon: '👥' },
     { id: 'schedules', name: 'Manage Schedules', icon: '📅' },
     { id: 'book-appointment', name: 'Book Appointment', icon: '🎟️' },
-    { id: 'my-appointments', name: 'My Appointments', icon: '🎟️' }
+    { id: 'my-appointments', name: 'My Appointments', icon: '🎟️' },
+    { id: 'manage-appointments', name: 'Manage Appointments', icon: '🗂️' }
   ];
 
   return (
